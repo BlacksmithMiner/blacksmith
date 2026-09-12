@@ -4,19 +4,19 @@
 khs=0
 stats=""
 
-local logfile="$CUSTOM_LOG_BASENAME.log"
+local feed="$CUSTOM_LOG_BASENAME.jsonl"
 local cards="${GPU_COUNT_NVIDIA:-0}"
 (( cards < 1 )) && cards=$(gpu-detect NVIDIA 2>/dev/null)
 (( cards < 1 )) && cards=1
 
-[[ -f $logfile ]] || return
-local seen_at=0
-seen_at=$(stat -c %Y "$logfile" 2>/dev/null || echo 0)
-(( $(date +%s) - seen_at > 90 )) && return
+[[ -f $feed ]] || return
+local seen=0
+seen=$(stat -c %Y "$feed" 2>/dev/null || echo 0)
+(( $(date +%s) - seen > 90 )) && return
 
 local row
-row=$(grep -a '"event":"pool_stats"' "$logfile" | tail -n1)
-[[ -z $row ]] && row=$(grep -a '"event":"pool_final"' "$logfile" | tail -n1)
+row=$(grep -a '"event":"pool_stats"' "$feed" | tail -n1)
+[[ -z $row ]] && row=$(grep -a '"event":"pool_final"' "$feed" | tail -n1)
 [[ -z $row ]] && return
 
 local rate acc rej
@@ -27,23 +27,23 @@ rej=$(jq -r  'try (.rejected // 0) catch 0'            <<< "$row" 2>/dev/null)
 [[ $acc  =~ ^[0-9]+$   ]] || acc=0
 [[ $rej  =~ ^[0-9]+$   ]] || rej=0
 
-local total per array
-total=$(awk -v e="$rate" 'BEGIN{printf "%.4f", e*1000}')
-per=$(awk -v t="$total" -v n="$cards" 'BEGIN{printf "%.4f", t/n}')
-array=$(jq -nc --argjson p "$per" --argjson n "$cards" '[range($n) | $p]')
+local total per hs
+total="$rate"
+per=$(awk -v t="$total" -v n="$cards" 'BEGIN{printf "%.6f", t/n}')
+hs=$(jq -nc --argjson p "$per" --argjson n "$cards" '[range($n) | $p]')
 
-local temps fans buses
-temps=$(jq -c "[.temp$nvidia_indexes_array]"   <<< "$gpu_stats" 2>/dev/null); [[ -z $temps || $temps == null ]] && temps='[]'
-fans=$(jq -c  "[.fan$nvidia_indexes_array]"    <<< "$gpu_stats" 2>/dev/null); [[ -z $fans  || $fans  == null ]] && fans='[]'
-buses=$(jq -c "[.busids$nvidia_indexes_array]" <<< "$gpu_stats" 2>/dev/null); [[ -z $buses || $buses == null ]] && buses='[]'
+local temp fan bus
+temp=$(jq -c "[.temp$nvidia_indexes_array]"   <<< "$gpu_stats" 2>/dev/null); [[ -z $temp || $temp == null ]] && temp='[]'
+fan=$(jq -c  "[.fan$nvidia_indexes_array]"    <<< "$gpu_stats" 2>/dev/null); [[ -z $fan  || $fan  == null ]] && fan='[]'
+bus=$(jq -c  "[.busids$nvidia_indexes_array]" <<< "$gpu_stats" 2>/dev/null); [[ -z $bus  || $bus  == null ]] && bus='[]'
 
 local secs=0 proc
 proc=$(pgrep -f 'blacksmith-forge' | head -n1)
 [[ -n $proc ]] && secs=$(( $(date +%s) - $(date +%s -d "$(ps -o lstart= -p "$proc" 2>/dev/null)" 2>/dev/null || date +%s) ))
 
-khs=$total
+khs=$(awk -v t="$total" 'BEGIN{printf "%.6f", t/1000}')
 stats=$(jq -nc \
-    --argjson hs "$array" --argjson temp "$temps" --argjson fan "$fans" --argjson bus "$buses" \
+    --argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" --argjson bus "$bus" \
     --arg up "$secs" --arg ver "$CUSTOM_VERSION" --arg a "$acc" --arg r "$rej" \
-    '{hs:$hs, hs_units:"khs", temp:$temp, fan:$fan, bus_numbers:$bus,
+    '{hs:$hs, hs_units:"hs", temp:$temp, fan:$fan, bus_numbers:$bus,
       uptime:($up|tonumber), ver:$ver, ar:[($a|tonumber),($r|tonumber)], algo:"blacksmith"}')

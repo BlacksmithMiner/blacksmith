@@ -61,6 +61,12 @@ minute (the package forces `--ui json` so the dashboard can read the stats).
   itself separately.
 * Driver requirement: **NVIDIA ≥ 580** (CUDA 13). Cards: RTX 30 / 40 / 50 (sm_86 / 89 / 120). The
   package installs/updates the driver for you when it's inadequate; disable with `FORGE_DRIVER_AUTO=0`.
+* **Hashrate is honest:** `1 ep/s = 1 H/s` — the dashboard shows real H/s, exactly what the pool credits.
+* **BTX-tuned reconnects:** the package ships a long stall/job timeout (BTX blocks are minutes apart), so
+  the miner does not falsely reconnect between blocks and drop shares as stale. Override in *Extra config
+  arguments* with your own `--stall-timeout` / `--job-timeout` if needed.
+* The HiveOS log is rendered in a readable blacksmith style; the raw JSON the dashboard parses is kept in a
+  sidecar `*.jsonl` next to the log.
 * 3% disclosed devfee (see the main README).
 
 Support: [blacksmith.best](https://blacksmith.best) · [Discord](https://discord.gg/kcjUZ4Raz)

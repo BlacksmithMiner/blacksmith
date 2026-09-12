@@ -17,6 +17,10 @@ done
 unset IFS
 
 local line="--ui json --stratum $endpoints --user $CUSTOM_TEMPLATE --pass ${CUSTOM_PASS:-x}"
+
+[[ $CUSTOM_USER_CONFIG != *"--stall-timeout"* ]] && line+=" --stall-timeout 900"
+[[ $CUSTOM_USER_CONFIG != *"--job-timeout"*   ]] && line+=" --job-timeout 300"
+
 [[ -n $CUSTOM_USER_CONFIG ]] && line+=" $CUSTOM_USER_CONFIG"
 [[ -n $WORKER_NAME ]] && line="${line//%WORKER_NAME%/$WORKER_NAME}"
 

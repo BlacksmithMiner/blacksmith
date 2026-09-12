@@ -19,7 +19,9 @@ done
 [[ -f $CUSTOM_CONFIG_FILENAME ]] || { echo "config missing — apply the Flight Sheet (h-config.sh)"; exit 1; }
 
 LOG="$CUSTOM_LOG_BASENAME.log"
+FEED="$CUSTOM_LOG_BASENAME.jsonl"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null
+: > "$LOG"
 
 ARGS="$(cat "$CUSTOM_CONFIG_FILENAME")"
 [[ -z ${ARGS// } ]] && { echo "config is empty — re-apply the Flight Sheet" | tee -a "$LOG"; exit 1; }
@@ -40,4 +42,7 @@ if [[ -n ${UNRESOLVED// } ]]; then
     exit 1
 fi
 
-exec stdbuf -oL -eL "$ENGINE" $ARGS 2>&1 | tee "$LOG"
+exec stdbuf -oL -eL "$ENGINE" $ARGS 2>&1 \
+    | stdbuf -oL tee "$FEED" \
+    | stdbuf -oL awk -f ./forge-log.awk \
+    | tee -a "$LOG"
