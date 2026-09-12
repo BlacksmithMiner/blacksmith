@@ -1,0 +1,4 @@
+*.tar.gz
+build/
+blacksmith/blacksmith-solver
+blacksmith/lib/

@@ -1,0 +1,19 @@
+BLACKSMITH (BlacksmithMiner) — End-User License
+
+Copyright (c) 2026 BlacksmithMiner. All rights reserved.
+
+This software (the "Miner", the blacksmith-solver binary and the launcher/HiveOS scripts distributed
+with it) is provided free of charge for the purpose of mining BTX. You may download, run, and
+redistribute the unmodified release archives.
+
+You may NOT: reverse-engineer, decompile, disassemble, or attempt to derive the source of the
+Miner's proof-of-work kernel; remove or alter the developer fee; or repackage the Miner under a
+different name.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO EVENT SHALL THE AUTHORS BE
+LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+The Miner builds on third-party components under their own terms (see THIRD-PARTY-NOTICES.md and
+LICENSE-THIRDPARTY-MIT); nothing here alters those.
+
+Contact: https://blacksmith.best · https://discord.gg/kcjUZ4Raz

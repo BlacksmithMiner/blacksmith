@@ -1,0 +1,7 @@
+* text=auto
+*.sh text eol=lf
+blacksmith text eol=lf
+h-config.sh text eol=lf
+h-run.sh text eol=lf
+h-stats.sh text eol=lf
+cbx-cuda-bootstrap.sh text eol=lf

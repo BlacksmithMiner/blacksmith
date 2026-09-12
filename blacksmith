@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+set -u
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+ENGINE="$ROOT/blacksmith-forge"
+SETUP="$ROOT/forge-cuda-setup.sh"
+RUNTIME_LIB="libcublasLt.so.13"
+DRIVER_FLOOR=580
+STORE="${FORGE_CUDA_CACHE:-$HOME/.cache/blacksmith/cuda}"
+DRIVER_AUTO="${FORGE_DRIVER_AUTO:-1}"
+
+note() { printf 'blacksmith: %s\n' "$*" >&2; }
+am_root() { [[ "$(id -u 2>/dev/null)" == "0" ]]; }
+
+chmod +x "$ENGINE" "$SETUP" 2>/dev/null || true
+
+list_cards() {
+    command -v nvidia-smi >/dev/null 2>&1 || return 1
+    nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader 2>/dev/null | while IFS=, read -r name cap; do
+        name="${name#"${name%%[![:space:]]*}"}"; name="${name%"${name##*[![:space:]]}"}"
+        cap="${cap//[[:space:]]/}"
+        [[ -n $cap ]] && note "detected ${name:-GPU}  cc ${cap} (sm_${cap//./})  — driver floor ${DRIVER_FLOOR}"
+    done
+}
+
+try_driver_install() {
+    am_root || { note "re-run with sudo to let blacksmith install the driver, or install it yourself (steps below)"; return 1; }
+    mkdir -p "$STORE" 2>/dev/null || true
+    local stamp="$STORE/.driver-attempt"
+    [[ -f $stamp ]] && { note "driver auto-install already tried — finish it manually (steps below)"; return 1; }
+    date -u +%FT%TZ > "$stamp" 2>/dev/null || true
+    if command -v ubuntu-drivers >/dev/null 2>&1; then
+        note "installing the recommended NVIDIA driver for the detected card(s) via ubuntu-drivers — reboot afterwards"
+        ubuntu-drivers install && return 0
+    fi
+    if command -v apt-get >/dev/null 2>&1; then
+        note "installing nvidia-driver-${DRIVER_FLOOR} via apt — reboot afterwards"
+        apt-get update -y && apt-get install -y "nvidia-driver-${DRIVER_FLOOR}" && return 0
+    fi
+    return 1
+}
+
+manual_driver_hint() {
+    note "install an NVIDIA driver >= ${DRIVER_FLOOR}:  sudo ubuntu-drivers install   (or)  sudo apt install nvidia-driver-${DRIVER_FLOOR}"
+    note "then reboot and run ./blacksmith again."
+}
+
+if ! command -v nvidia-smi >/dev/null 2>&1; then
+    note "no 'nvidia-smi' — the NVIDIA driver is not installed."
+    if [[ $DRIVER_AUTO == 1 ]] && try_driver_install; then
+        note "driver installed — REBOOT, then run ./blacksmith again."; exit 0
+    fi
+    manual_driver_hint; exit 1
+fi
+
+list_cards
+DRIVER_MAJOR="$(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -n1 | cut -d. -f1)"
+if [[ -n $DRIVER_MAJOR && $DRIVER_MAJOR -lt $DRIVER_FLOOR ]]; then
+    note "driver $DRIVER_MAJOR is below the CUDA 13 floor ($DRIVER_FLOOR)."
+    if [[ $DRIVER_AUTO == 1 ]] && try_driver_install; then
+        note "driver updated — REBOOT, then run ./blacksmith again."; exit 0
+    fi
+    manual_driver_hint
+fi
+
+export LD_LIBRARY_PATH="$ROOT/lib:$STORE:${LD_LIBRARY_PATH:-}"
+runtime_present() {
+    [[ -e "$ROOT/lib/$RUNTIME_LIB" || -e "$STORE/$RUNTIME_LIB" ]] && return 0
+    ldconfig -p 2>/dev/null | grep -q "$RUNTIME_LIB" && return 0
+    return 1
+}
+if ! runtime_present; then
+    note "CUDA 13 runtime '$RUNTIME_LIB' missing — fetching it once (~350 MB compressed)..."
+    [[ -x $SETUP ]] && FORGE_CUDA_CACHE="$STORE" FORGE_DRIVER_AUTO=0 "$SETUP" || true
+fi
+if ! runtime_present; then
+    cat >&2 <<EOF
+blacksmith: could not obtain '$RUNTIME_LIB' automatically (offline?). Install the CUDA 13 runtime by hand:
+
+  Ubuntu 22.04/24.04:
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+    sudo dpkg -i cuda-keyring_1.1-1_all.deb
+    sudo apt-get update
+    sudo apt-get install -y libcublas-13-2
+
+  or grab the .deb directly from:
+    https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/
+
+  You also need an NVIDIA driver >= $DRIVER_FLOOR (check: nvidia-smi).
+
+Then run ./blacksmith again.
+EOF
+    exit 1
+fi
+
+export HOME="${HOME:-$ROOT}"
+exec "$ENGINE" "$@"
