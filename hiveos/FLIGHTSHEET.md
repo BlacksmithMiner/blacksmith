@@ -8,17 +8,17 @@ Everything you need to run BLACKSMITH on HiveOS. Two ways to install the miner, 
 **Installation URL** field. Paste this and HiveOS pulls the package itself:
 
 ```
-https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.0.0/blacksmith-1.0.0.tar.gz
+https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.0.0/blacksmith-hiveos-1.0.0.tar.gz
 ```
 
-**Option B — manual.** Download `blacksmith-1.0.0.tar.gz` from the
+**Option B — manual.** Download `blacksmith-hiveos-1.0.0.tar.gz` from the
 [Releases](https://github.com/BlacksmithMiner/blacksmith/releases) page and, on the rig:
 
 ```bash
-cd /hive/miners/custom && tar xzf blacksmith-1.0.0.tar.gz
+cd /hive/miners/custom && tar xzf blacksmith-hiveos-1.0.0.tar.gz
 ```
 
-The package name is **blacksmith** (`CUSTOM_NAME=blacksmith`). On first run the package
+The package name is **blacksmith-hiveos** (`CUSTOM_NAME=blacksmith-hiveos`). On first run the package
 auto-provisions the rig for the GPU(s) it detects:
 
 * it reads every card (`nvidia-smi`), and if the **NVIDIA driver** is missing or too old for CUDA 13
@@ -36,13 +36,13 @@ auto-provisions the rig for the GPU(s) it detects:
 | **Coin**                       | `BTX` (or *Custom* if BTX isn't listed)                                       |
 | **Wallet**                     | your **BTX payout address** (`btx1…`), optionally `btx1….%WORKER_NAME%`       |
 | **Pool**                       | *Configure in miner*                                                          |
-| **Miner**                      | **Custom** → select **blacksmith**                                            |
+| **Miner**                      | **Custom** → select **blacksmith-hiveos**                                            |
 
 Then open **Setup Miner Config** on the miner and fill:
 
 | Miner-config field             | Value                                                                        |
 |--------------------------------|------------------------------------------------------------------------------|
-| **Installation URL**           | `https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.0.0/blacksmith-1.0.0.tar.gz` |
+| **Installation URL**           | `https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.0.0/blacksmith-hiveos-1.0.0.tar.gz` |
 | **Hash algorithm**             | leave empty / `btx`                                                          |
 | **Wallet and worker template** | `%WAL%.%WORKER_NAME%`                                                        |
 | **Pool URL**                   | `btx-eu.lproute.com:8666` (or another region: `btx-au`, `btx-pl`, … `.lproute.com:8666`) |

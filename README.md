@@ -24,7 +24,7 @@
 Grab the latest build from the [**Releases**](https://github.com/BlacksmithMiner/blacksmith/releases) page:
 
 * `BLACKSMITH-<version>-linux-x86_64.tar.gz` — the miner for any Linux box.
-* `blacksmith-<version>.tar.gz` — the HiveOS custom-miner package.
+* `blacksmith-hiveos-<version>.tar.gz` — the HiveOS custom-miner package.
 
 ## Requirements
 
@@ -71,7 +71,7 @@ Full option list: `./blacksmith-forge --help`.
 
 ## HiveOS
 
-The HiveOS package (`blacksmith-<version>.tar.gz`, or the `hiveos/blacksmith/` folder here) is a ready
+The HiveOS package (`blacksmith-hiveos-<version>.tar.gz`, or the `hiveos/blacksmith-hiveos/` folder here) is a ready
 custom miner. It installs the miner, fetches the CUDA 13 runtime once into a persistent cache
 (survives updates), reports live hashrate and accepted/rejected shares to the dashboard, and
 restarts cleanly.
@@ -79,9 +79,9 @@ restarts cleanly.
 **→ Full step-by-step Flight Sheet guide: [`hiveos/FLIGHTSHEET.md`](hiveos/FLIGHTSHEET.md).**
 
 **Install (once):** in the Flight Sheet's *Setup Miner Config* set the **Installation URL** to
-`https://github.com/BlacksmithMiner/blacksmith/releases/latest/download/blacksmith-1.0.0.tar.gz`
+`https://github.com/BlacksmithMiner/blacksmith/releases/latest/download/blacksmith-hiveos-1.0.0.tar.gz`
 (HiveOS pulls it itself), or upload the package in HiveOS → *Miners → Custom → Install*, or drop the
-folder into `/hive/miners/custom/blacksmith/`.
+folder into `/hive/miners/custom/blacksmith-hiveos/`.
 
 **Flight Sheet** (Wallet and Worker Template → Pool → Miner):
 
@@ -90,7 +90,7 @@ folder into `/hive/miners/custom/blacksmith/`.
 | **Coin**                      | BTX (or any / custom)                                                        |
 | **Wallet**                    | your **BTX payout address** (`btx1…`)                                        |
 | **Pool URL** (`%URL%`)        | `btx-eu.lproute.com:8666` (or another `btx-<region>.lproute.com:8666`)       |
-| **Miner**                     | Custom → **blacksmith**                                                          |
+| **Miner**                     | Custom → **blacksmith-hiveos**                                                          |
 | **Miner config / Setup Miner Config** | leave defaults; the package forces `--ui json` so the dashboard can read stats |
 | **Pass**                      | `x` (default)                                                                |
 | **Extra config arguments**    | optional extra flags, e.g. a second `--stratum` for failover                 |

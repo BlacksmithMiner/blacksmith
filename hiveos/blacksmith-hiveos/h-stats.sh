@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-. /hive/miners/custom/${CUSTOM_MINER:-blacksmith}/h-manifest.conf
+. /hive/miners/custom/${CUSTOM_MINER:-blacksmith-hiveos}/h-manifest.conf
 
 khs=0
 stats=""
