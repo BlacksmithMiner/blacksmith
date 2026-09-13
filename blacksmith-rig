@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# blacksmith-rig — one-command multi-GPU supervisor for blacksmith-forge.
+#
+# Each GPU still runs its own fully isolated, unmodified blacksmith-forge process
+# (its own attest call, own CUDA context, own devfee window) — exactly the
+# battle-tested single-GPU path, just orchestrated for you instead of typed by hand.
+# A crash/hang on one card never touches the others; this script restarts only the
+# card that died. See docs/MINER.md "Multi-GPU" for why it's built this way instead
+# of one shared in-process multi-GPU worker.
+#
+# Usage:
+#   ./blacksmith-rig --user <wallet>.<rig-label> --stratum <pool-url> [options] [-- <extra blacksmith flags>]
+#
+# Options:
+#   --gpu-devices <list>   comma-separated GPU indices (default: all GPUs on the box)
+#   --engine <path>        path to the blacksmith launcher/binary (default: ./blacksmith next to this script)
+#   --logdir <dir>         where per-GPU logs + pidfiles live (default: ./rig-logs)
+#   --stagger-s <N>        delay between starting each GPU (default: 5; use 0 to launch all at once)
+#   --restart-backoff-s <N> minimum seconds between restart attempts for one GPU (default: 15)
+#   --                     everything after this is passed through verbatim to blacksmith-forge
+#                          (e.g. --pool-proto lucky, --stall-timeout 600)
+#
+# Worker names sent to the pool are "<rig-label>_gpu<index>" (rig-label = the part
+# after the first '.' in --user). Status: ./blacksmith-rig-status --logdir ./rig-logs
+set -u
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENGINE="$SELF_DIR/blacksmith"
+LOGDIR="./rig-logs"
+STAGGER=5
+BACKOFF=15
+GPU_LIST=""
+PASSTHROUGH_USER=""
+declare -a EXTRA_ARGS=()
+declare -a REMAINING=()
+
+log() { printf 'blacksmith-rig: %s\n' "$*" >&2; }
+
+args=("$@")
+i=0
+while [[ $i -lt ${#args[@]} ]]; do
+    a="${args[$i]}"
+    case "$a" in
+        --gpu-devices) GPU_LIST="${args[$((i+1))]}"; i=$((i+2));;
+        --engine) ENGINE="${args[$((i+1))]}"; i=$((i+2));;
+        --logdir) LOGDIR="${args[$((i+1))]}"; i=$((i+2));;
+        --stagger-s) STAGGER="${args[$((i+1))]}"; i=$((i+2));;
+        --restart-backoff-s) BACKOFF="${args[$((i+1))]}"; i=$((i+2));;
+        --user) PASSTHROUGH_USER="${args[$((i+1))]}"; i=$((i+2));;
+        --) i=$((i+1)); while [[ $i -lt ${#args[@]} ]]; do EXTRA_ARGS+=("${args[$i]}"); i=$((i+1)); done;;
+        *) REMAINING+=("$a"); i=$((i+1));;
+    esac
+done
+
+if [[ -z "$PASSTHROUGH_USER" ]]; then
+    log "--user <wallet>.<rig-label> is required (same as blacksmith itself)"
+    exit 2
+fi
+if [[ ! -x "$ENGINE" ]]; then
+    log "engine not found or not executable: $ENGINE (use --engine to point at it)"
+    exit 2
+fi
+
+RIG_LABEL="${PASSTHROUGH_USER#*.}"
+WALLET="${PASSTHROUGH_USER%%.*}"
+if [[ "$RIG_LABEL" == "$PASSTHROUGH_USER" ]]; then RIG_LABEL="rig"; fi
+
+if [[ -z "$GPU_LIST" ]]; then
+    GPU_LIST="$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | tr -d ' ' | paste -sd, -)"
+    if [[ -z "$GPU_LIST" ]]; then
+        log "no 'nvidia-smi' output — pass --gpu-devices explicitly (e.g. --gpu-devices 0,1,2)"
+        exit 2
+    fi
+fi
+
+mkdir -p "$LOGDIR"
+IFS=',' read -ra GPUS <<< "$GPU_LIST"
+log "rig-label=$RIG_LABEL wallet=$WALLET gpus=[${GPU_LIST}] stagger=${STAGGER}s logdir=$LOGDIR"
+
+declare -A LAST_START
+declare -A PID_OF
+
+start_gpu() {
+    local gi="$1"
+    local logf="$LOGDIR/gpu${gi}.log"
+    local pidf="$LOGDIR/gpu${gi}.pid"
+    log "starting GPU $gi -> $logf"
+    ( export CUDA_VISIBLE_DEVICES="$gi"
+      exec setsid "$ENGINE" --user "${WALLET}.${RIG_LABEL}_gpu${gi}" "${REMAINING[@]}" "${EXTRA_ARGS[@]}" \
+          >"$logf" 2>&1 < /dev/null &
+      echo $! > "$pidf" )
+    PID_OF[$gi]="$(cat "$pidf" 2>/dev/null || echo 0)"
+    LAST_START[$gi]="$(date +%s)"
+}
+
+# initial staggered launch
+for gi in "${GPUS[@]}"; do
+    start_gpu "$gi"
+    [[ "$STAGGER" != "0" ]] && sleep "$STAGGER"
+done
+
+log "all GPUs launched — supervising (Ctrl+C to stop watching; miners keep running detached)"
+log "view live status any time with: $SELF_DIR/blacksmith-rig-status --logdir $LOGDIR"
+
+trap 'log "supervisor loop exiting (miners keep running — kill them with: pkill -f blacksmith-forge)"; exit 0' INT TERM
+
+while true; do
+    sleep 20
+    for gi in "${GPUS[@]}"; do
+        pidf="$LOGDIR/gpu${gi}.pid"
+        pid="$(cat "$pidf" 2>/dev/null || echo 0)"
+        if [[ "$pid" != "0" ]] && ! kill -0 "$pid" 2>/dev/null; then
+            now="$(date +%s)"
+            last="${LAST_START[$gi]:-0}"
+            if (( now - last >= BACKOFF )); then
+                log "GPU $gi (pid $pid) is gone — restarting"
+                start_gpu "$gi"
+            fi
+        fi
+    done
+done

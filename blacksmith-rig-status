@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# blacksmith-rig-status — read-only combined status table for a blacksmith-rig run.
+# Safe to run from any SSH session (including a fresh one after the launching
+# session was closed) — it only reads the per-GPU log files blacksmith-rig writes.
+#
+# Usage:
+#   ./blacksmith-rig-status [--logdir ./rig-logs] [--watch [--interval-s N]]
+set -u
+
+LOGDIR="./rig-logs"
+WATCH=0
+INTERVAL=10
+
+args=("$@")
+i=0
+while [[ $i -lt ${#args[@]} ]]; do
+    case "${args[$i]}" in
+        --logdir) LOGDIR="${args[$((i+1))]}"; i=$((i+2));;
+        --watch) WATCH=1; i=$((i+1));;
+        --interval-s) INTERVAL="${args[$((i+1))]}"; i=$((i+1));;
+        *) i=$((i+1));;
+    esac
+done
+
+render() {
+    if [[ ! -d "$LOGDIR" ]]; then
+        printf 'blacksmith-rig-status: no such logdir: %s\n' "$LOGDIR" >&2
+        return 1
+    fi
+    local total_speed=0 total_a=0 total_r=0 alive=0 down=0
+    printf '%-5s %-8s %-10s %-22s %s\n' "GPU" "PID" "SPEED" "SHARES(A/R)" "LAST LINE"
+    for logf in "$LOGDIR"/gpu*.log; do
+        [[ -f "$logf" ]] || continue
+        local gi pidf pid last speed a r status
+        gi="$(basename "$logf" .log)"; gi="${gi#gpu}"
+        pidf="$LOGDIR/gpu${gi}.pid"
+        pid="$(cat "$pidf" 2>/dev/null || echo '?')"
+        if [[ "$pid" != "?" ]] && kill -0 "$pid" 2>/dev/null; then status="up"; alive=$((alive+1))
+        else status="DOWN"; down=$((down+1)); fi
+        last="$(grep -aE 'speed [0-9.]+ ep/s' "$logf" | tail -1)"
+        speed="$(printf '%s' "$last" | grep -oE 'speed [0-9.]+' | grep -oE '[0-9.]+' || echo 0)"
+        a="$(printf '%s' "$last" | grep -oE 'accepted [0-9]+' | grep -oE '[0-9]+' || echo 0)"
+        r="$(printf '%s' "$last" | grep -oE 'rejected [0-9]+' | grep -oE '[0-9]+' || echo 0)"
+        total_speed="$(awk -v a="$total_speed" -v b="$speed" 'BEGIN{printf "%.4f", a+b}')"
+        total_a=$((total_a + a)); total_r=$((total_r + r))
+        printf '%-5s %-8s %-10s %-22s %s\n' "$gi" "$pid[$status]" "$speed" "${a}/${r}" "$(tail -1 "$logf" | cut -c1-60)"
+    done
+    printf -- '-------------------------------------------------------------------\n'
+    printf 'TOTAL: %d up / %d down   speed=%.4f ep/s   shares accepted=%d rejected=%d\n' \
+        "$alive" "$down" "$total_speed" "$total_a" "$total_r"
+}
+
+if [[ "$WATCH" == "1" ]]; then
+    while true; do clear; date; render; sleep "$INTERVAL"; done
+else
+    render
+fi

@@ -62,12 +62,35 @@ Then it launches the miner with your arguments. You can also run the binary dire
 ./blacksmith --user btx1yourwallet.rig1 --pass x
 ```
 
-The default pool is `stratum+tls://btx-eu.lproute.com:8666` (EU). Pick a closer region if you like
-(`btx-au`, `btx-pl`, … `.lproute.com:8666`) with `--stratum`. Port `8666` and LuckyPool's
+The default pool is `stratum+tls://btx-eu.lproute.com:8665` — LuckyPool's native **AEK1** protocol,
+which validates each share by re-running the episode itself (ExactReplay), so accepted shares are
+credited immediately and honestly. Pick a closer region if you like (`btx-us-east`, `btx-us-west`,
+`btx-us-central`, `btx-us-ord`, … `.lproute.com:8665`) with `--stratum`. TLS and LuckyPool's
 self-signed certificate are handled for you — no extra flags. The part before the dot in `--user`
 is your payout address; the part after the dot is an optional worker label.
 
 Full option list: `./blacksmith-forge --help`.
+
+## Multi-GPU / whole rig
+
+`./blacksmith-rig` runs the miner across every GPU in the box (or a chosen subset) as one command:
+
+```bash
+./blacksmith-rig --user btx1yourwallet.rig1 --pass x
+# or a specific subset:
+./blacksmith-rig --user btx1yourwallet.rig1 --gpu-devices 0,1,2,3 -- --stall-timeout 600
+```
+
+Each GPU still runs its own fully independent `blacksmith-forge` process (own attest, own CUDA
+context) — a crash or hang on one card never touches the others, and the supervisor restarts only
+the card that died. Worker names sent to the pool are `<rig-label>_gpu<index>` automatically.
+
+Check on it any time, from any SSH session (it only reads log files, never touches the miners):
+
+```bash
+./blacksmith-rig-status                 # one-shot table: GPU / speed / shares / status
+./blacksmith-rig-status --watch         # live-refreshing view
+```
 
 ## HiveOS
 
@@ -79,7 +102,7 @@ restarts cleanly.
 **→ Full step-by-step Flight Sheet guide: [`hiveos/FLIGHTSHEET.md`](hiveos/FLIGHTSHEET.md).**
 
 **Install (once):** in the Flight Sheet's *Setup Miner Config* set the **Installation URL** to
-`https://github.com/BlacksmithMiner/blacksmith/releases/latest/download/blacksmith-hiveos-1.2.tar.gz`
+`https://github.com/BlacksmithMiner/blacksmith/releases/latest/download/blacksmith-hiveos-1.2.1.tar.gz`
 (HiveOS pulls it itself), or upload the package in HiveOS → *Miners → Custom → Install*, or drop the
 folder into `/hive/miners/custom/blacksmith-hiveos/`.
 
@@ -89,7 +112,7 @@ folder into `/hive/miners/custom/blacksmith-hiveos/`.
 |-------------------------------|-----------------------------------------------------------------------------|
 | **Coin**                      | BTX (or any / custom)                                                        |
 | **Wallet**                    | your **BTX payout address** (`btx1…`)                                        |
-| **Pool URL** (`%URL%`)        | `btx-eu.lproute.com:8666` (or another `btx-<region>.lproute.com:8666`)       |
+| **Pool URL** (`%URL%`)        | `btx-eu.lproute.com:8665` (or another `btx-<region>.lproute.com:8665`)       |
 | **Miner**                     | Custom → **blacksmith-hiveos**                                                          |
 | **Miner config / Setup Miner Config** | leave defaults; the package forces `--ui json` so the dashboard can read stats |
 | **Pass**                      | `x` (default)                                                                |

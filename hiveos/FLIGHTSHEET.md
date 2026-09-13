@@ -8,14 +8,14 @@ Everything you need to run BLACKSMITH on HiveOS. Two ways to install the miner, 
 **Installation URL** field. Paste this and HiveOS pulls the package itself:
 
 ```
-https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2/blacksmith-hiveos-1.2.tar.gz
+https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2.1/blacksmith-hiveos-1.2.1.tar.gz
 ```
 
-**Option B — manual.** Download `blacksmith-hiveos-1.2.tar.gz` from the
+**Option B — manual.** Download `blacksmith-hiveos-1.2.1.tar.gz` from the
 [Releases](https://github.com/BlacksmithMiner/blacksmith/releases) page and, on the rig:
 
 ```bash
-cd /hive/miners/custom && tar xzf blacksmith-hiveos-1.2.tar.gz
+cd /hive/miners/custom && tar xzf blacksmith-hiveos-1.2.1.tar.gz
 ```
 
 The package name is **blacksmith-hiveos** (`CUSTOM_NAME=blacksmith-hiveos`). On first run the package
@@ -42,10 +42,10 @@ Then open **Setup Miner Config** on the miner and fill:
 
 | Miner-config field             | Value                                                                        |
 |--------------------------------|------------------------------------------------------------------------------|
-| **Installation URL**           | `https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2/blacksmith-hiveos-1.2.tar.gz` |
+| **Installation URL**           | `https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2.1/blacksmith-hiveos-1.2.1.tar.gz` |
 | **Hash algorithm**             | leave empty / `btx`                                                          |
 | **Wallet and worker template** | `%WAL%.%WORKER_NAME%`                                                        |
-| **Pool URL**                   | `btx-eu.lproute.com:8666` (or another region: `btx-au`, `btx-pl`, … `.lproute.com:8666`) |
+| **Pool URL**                   | `btx-eu.lproute.com:8665` (or another region: `btx-us-east`, `btx-us-west`, … `.lproute.com:8665`) |
 | **Pass**                       | `x`                                                                          |
 | **Extra config arguments**     | *(optional)* e.g. a second `--stratum` for failover                          |
 
@@ -55,8 +55,8 @@ minute (the package forces `--ui json` so the dashboard can read the stats).
 
 ## Notes
 
-* **Port `8666`, not `8665`.** LuckyPool's self-signed certificate and the port are handled for you —
-  no extra flags.
+* **Port `8665`** — LuckyPool's native AEK1 protocol (ExactReplay-validated shares, credited
+  immediately). The self-signed certificate and the protocol are handled for you — no extra flags.
 * `%WAL%` is your BTX payout address; `%WORKER_NAME%` becomes the worker label so each rig reports
   itself separately.
 * Driver requirement: **NVIDIA ≥ 580** (CUDA 13). Cards: RTX 30 / 40 / 50 (sm_86 / 89 / 120). The
