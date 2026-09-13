@@ -8,14 +8,14 @@ Everything you need to run BLACKSMITH on HiveOS. Two ways to install the miner, 
 **Installation URL** field. Paste this and HiveOS pulls the package itself:
 
 ```
-https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2.1/blacksmith-hiveos-1.2.1.tar.gz
+https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2/blacksmith-hiveos-1.2.tar.gz
 ```
 
-**Option B — manual.** Download `blacksmith-hiveos-1.2.1.tar.gz` from the
+**Option B — manual.** Download `blacksmith-hiveos-1.2.tar.gz` from the
 [Releases](https://github.com/BlacksmithMiner/blacksmith/releases) page and, on the rig:
 
 ```bash
-cd /hive/miners/custom && tar xzf blacksmith-hiveos-1.2.1.tar.gz
+cd /hive/miners/custom && tar xzf blacksmith-hiveos-1.2.tar.gz
 ```
 
 The package name is **blacksmith-hiveos** (`CUSTOM_NAME=blacksmith-hiveos`). On first run the package
@@ -42,7 +42,7 @@ Then open **Setup Miner Config** on the miner and fill:
 
 | Miner-config field             | Value                                                                        |
 |--------------------------------|------------------------------------------------------------------------------|
-| **Installation URL**           | `https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2.1/blacksmith-hiveos-1.2.1.tar.gz` |
+| **Installation URL**           | `https://github.com/BlacksmithMiner/blacksmith/releases/download/v1.2/blacksmith-hiveos-1.2.tar.gz` |
 | **Hash algorithm**             | leave empty / `btx`                                                          |
 | **Wallet and worker template** | `%WAL%.%WORKER_NAME%`                                                        |
 | **Pool URL**                   | `btx-eu.lproute.com:8665` (or another region: `btx-us-east`, `btx-us-west`, … `.lproute.com:8665`) |

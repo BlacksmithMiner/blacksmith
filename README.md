@@ -102,7 +102,7 @@ restarts cleanly.
 **→ Full step-by-step Flight Sheet guide: [`hiveos/FLIGHTSHEET.md`](hiveos/FLIGHTSHEET.md).**
 
 **Install (once):** in the Flight Sheet's *Setup Miner Config* set the **Installation URL** to
-`https://github.com/BlacksmithMiner/blacksmith/releases/latest/download/blacksmith-hiveos-1.2.1.tar.gz`
+`https://github.com/BlacksmithMiner/blacksmith/releases/latest/download/blacksmith-hiveos-1.2.tar.gz`
 (HiveOS pulls it itself), or upload the package in HiveOS → *Miners → Custom → Install*, or drop the
 folder into `/hive/miners/custom/blacksmith-hiveos/`.
 
