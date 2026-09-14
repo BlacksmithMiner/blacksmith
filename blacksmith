@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 set -u
+
+# WSL2 ships nvidia-smi/libcuda under /usr/lib/wsl/lib, added to PATH only for the
+# interactive login shell — `sudo` resets PATH to secure_path and can't see it, which makes
+# a perfectly fine WSL2 GPU look like "no driver installed" under sudo. Harmless elsewhere.
+[[ -d /usr/lib/wsl/lib ]] && export PATH="$PATH:/usr/lib/wsl/lib"
+
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 ENGINE="$ROOT/blacksmith-forge"
 SETUP="$ROOT/forge-cuda-setup.sh"
